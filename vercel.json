@@ -9,7 +9,8 @@
             "src": "package.json",
             "use": "@vercel/static-build",
             "config": {
-                "distDir": "packages/frontend/apps/web/dist"
+                "distDir": "packages/frontend/apps/web/dist",
+                "buildCommand": "yarn affine build @affine/web --deps"
             }
         }
     ],

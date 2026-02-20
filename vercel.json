@@ -10,7 +10,7 @@
             "use": "@vercel/static-build",
             "config": {
                 "distDir": "packages/frontend/apps/web/dist",
-                "buildCommand": "yarn affine build @affine/web --deps"
+                "buildCommand": "yarn affine build -p web --deps"
             }
         }
     ],

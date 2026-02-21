@@ -84,7 +84,7 @@ function getBaseWorkerConfigs(
   ];
 }
 
-function getWebpackBundleConfigs(pkg: Package): webpack.MultiConfiguration {
+function getWebpackBundleConfigs(pkg: Package, entryPath?: string): webpack.MultiConfiguration {
   switch (pkg.name) {
     case '@affine/admin': {
       return [
@@ -144,7 +144,7 @@ function getWebpackBundleConfigs(pkg: Package): webpack.MultiConfiguration {
     }
     case '@affine/server': {
       return [
-        createWebpackNodeTargetConfig(pkg, pkg.srcPath.join('index.ts').value),
+        createWebpackNodeTargetConfig(pkg, entryPath || pkg.srcPath.join('index.ts').value),
       ] as webpack.MultiConfiguration;
     }
   }
@@ -152,7 +152,7 @@ function getWebpackBundleConfigs(pkg: Package): webpack.MultiConfiguration {
   throw new Error(`Unsupported package: ${pkg.name}`);
 }
 
-function getRspackBundleConfigs(pkg: Package): MultiRspackOptions {
+function getRspackBundleConfigs(pkg: Package, entryPath?: string): MultiRspackOptions {
   assertRspackSupportedPackage(pkg);
 
   switch (pkg.name) {
@@ -214,7 +214,7 @@ function getRspackBundleConfigs(pkg: Package): MultiRspackOptions {
     }
     case '@affine/server': {
       return [
-        createRspackNodeTargetConfig(pkg, pkg.srcPath.join('index.ts').value),
+        createRspackNodeTargetConfig(pkg, entryPath || pkg.srcPath.join('index.ts').value),
       ] as MultiRspackOptions;
     }
   }
@@ -233,6 +233,10 @@ export class BundleCommand extends PackageCommand {
     description: 'Run in Development mode',
   });
 
+  entry = Option.String('--entry', {
+    description: 'Custom entry point for the bundle',
+  });
+
   async execute() {
     const pkg = this.workspace.getPackage(this.package);
     const bundler = getBundler();
@@ -240,31 +244,41 @@ export class BundleCommand extends PackageCommand {
     if (this.dev) {
       await BundleCommand.dev(pkg, bundler);
     } else {
-      await BundleCommand.build(pkg, bundler);
+      await BundleCommand.build(pkg, bundler, this.entry);
     }
   }
 
-  static async build(pkg: Package, bundler: Bundler = getBundler()) {
+  static async build(pkg: Package, bundler: Bundler = getBundler(), entry?: string) {
     if (bundler === 'rspack' && !isRspackSupportedPackageName(pkg.name)) {
-      return BundleCommand.buildWithWebpack(pkg);
+      return BundleCommand.buildWithWebpack(pkg, entry);
     }
 
     switch (bundler) {
       case 'webpack':
-        return BundleCommand.buildWithWebpack(pkg);
+        return BundleCommand.buildWithWebpack(pkg, entry);
       case 'rspack':
-        return BundleCommand.buildWithRspack(pkg);
+        return BundleCommand.buildWithRspack(pkg, entry);
     }
   }
 
-  static async buildWithWebpack(pkg: Package) {
+  static async buildWithWebpack(pkg: Package, entryName?: string) {
     process.env.NODE_ENV = 'production';
     const logger = new Logger('bundle');
     logger.info(`Packing package ${pkg.name} with webpack...`);
     logger.info('Cleaning old output...');
     rmSync(pkg.distPath.value, { recursive: true, force: true });
 
-    const config = getWebpackBundleConfigs(pkg);
+    let entryPath: string | undefined;
+    if (entryName) {
+      // Resolve entry name to path
+      if (entryName === 'vercel') {
+        entryPath = pkg.srcPath.join('vercel-handler.ts').value;
+      } else {
+        entryPath = pkg.srcPath.join(entryName).value;
+      }
+    }
+
+    const config = getWebpackBundleConfigs(pkg, entryPath);
     config.parallelism = cpus().length;
 
     const compiler = webpack(config);
@@ -354,7 +368,7 @@ export class BundleCommand extends PackageCommand {
     await devServer.start();
   }
 
-  static async buildWithRspack(pkg: Package) {
+  static async buildWithRspack(pkg: Package, entryName?: string) {
     process.env.NODE_ENV = 'production';
     assertRspackSupportedPackage(pkg);
 
@@ -363,7 +377,16 @@ export class BundleCommand extends PackageCommand {
     logger.info('Cleaning old output...');
     rmSync(pkg.distPath.value, { recursive: true, force: true });
 
-    const config = getRspackBundleConfigs(pkg);
+    let entryPath: string | undefined;
+    if (entryName) {
+      if (entryName === 'vercel') {
+        entryPath = pkg.srcPath.join('vercel-handler.ts').value;
+      } else {
+        entryPath = pkg.srcPath.join(entryName).value;
+      }
+    }
+
+    const config = getRspackBundleConfigs(pkg, entryPath);
     config.parallelism = cpus().length;
 
     const compiler = rspack(config);

@@ -2,26 +2,26 @@
     "version": 2,
     "builds": [
         {
-            "src": "packages/backend/server/src/vercel-handler.ts",
-            "use": "@vercel/node"
-        },
-        {
             "src": "package.json",
             "use": "@vercel/static-build",
             "config": {
                 "distDir": "packages/frontend/apps/web/dist",
-                "buildCommand": "yarn affine build -p web --deps"
+                "buildCommand": "yarn build"
             }
+        },
+        {
+            "src": "api/index.js",
+            "use": "@vercel/node"
         }
     ],
     "routes": [
         {
             "src": "/api/(.*)",
-            "dest": "packages/backend/server/src/vercel-handler.ts"
+            "dest": "api/index.js"
         },
         {
             "src": "/graphql",
-            "dest": "packages/backend/server/src/vercel-handler.ts"
+            "dest": "api/index.js"
         },
         {
             "handle": "filesystem"

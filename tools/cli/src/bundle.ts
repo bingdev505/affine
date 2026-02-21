@@ -143,8 +143,13 @@ function getWebpackBundleConfigs(pkg: Package, entryPath?: string): webpack.Mult
       ] as webpack.MultiConfiguration;
     }
     case '@affine/server': {
+      const noExternals = entryPath?.endsWith('vercel-handler.ts');
       return [
-        createWebpackNodeTargetConfig(pkg, entryPath || pkg.srcPath.join('index.ts').value),
+        createWebpackNodeTargetConfig(
+          pkg,
+          entryPath || pkg.srcPath.join('index.ts').value,
+          noExternals
+        ),
       ] as webpack.MultiConfiguration;
     }
   }
@@ -213,8 +218,13 @@ function getRspackBundleConfigs(pkg: Package, entryPath?: string): MultiRspackOp
       ] as MultiRspackOptions;
     }
     case '@affine/server': {
+      const noExternals = entryPath?.endsWith('vercel-handler.ts');
       return [
-        createRspackNodeTargetConfig(pkg, entryPath || pkg.srcPath.join('index.ts').value),
+        createRspackNodeTargetConfig(
+          pkg,
+          entryPath || pkg.srcPath.join('index.ts').value,
+          noExternals
+        ),
       ] as MultiRspackOptions;
     }
   }

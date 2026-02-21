@@ -225,17 +225,17 @@ export function createHTMLTargetConfig(
                     postcssOptions: {
                       plugins: pkg.join('tailwind.config.js').exists()
                         ? [
-                            [
-                              '@tailwindcss/postcss',
-                              require(pkg.join('tailwind.config.js').value),
-                            ],
-                            ['autoprefixer'],
-                          ]
-                        : [
-                            cssnano({
-                              preset: ['default', { convertValues: false }],
-                            }),
+                          [
+                            '@tailwindcss/postcss',
+                            require(pkg.join('tailwind.config.js').value),
                           ],
+                          ['autoprefixer'],
+                        ]
+                        : [
+                          cssnano({
+                            preset: ['default', { convertValues: false }],
+                          }),
+                        ],
                     },
                   },
                 },
@@ -263,32 +263,32 @@ export function createHTMLTargetConfig(
         ),
       }),
       !buildConfig.debug &&
-        // todo: support multiple entry points
-        new MiniCssExtractPlugin({
-          filename: `[name].[contenthash:8].css`,
-          ignoreOrder: true,
-        }),
+      // todo: support multiple entry points
+      new MiniCssExtractPlugin({
+        filename: `[name].[contenthash:8].css`,
+        ignoreOrder: true,
+      }),
       new VanillaExtractPlugin(),
       !buildConfig.isAdmin &&
-        new CopyPlugin({
-          patterns: [
-            {
-              // copy the shared public assets into dist
-              from: new Package('@affine/core').join('public').value,
-            },
-          ],
-        }),
+      new CopyPlugin({
+        patterns: [
+          {
+            // copy the shared public assets into dist
+            from: new Package('@affine/core').join('public').value,
+          },
+        ],
+      }),
       !buildConfig.debug &&
-        process.env.PERFSEE_TOKEN &&
-        new PerfseePlugin({ project: 'affine-toeverything' }),
+      process.env.PERFSEE_TOKEN &&
+      new PerfseePlugin({ project: 'affine-toeverything' }),
       process.env.SENTRY_AUTH_TOKEN &&
-        process.env.SENTRY_ORG &&
-        process.env.SENTRY_PROJECT &&
-        sentryWebpackPlugin({
-          org: process.env.SENTRY_ORG,
-          project: process.env.SENTRY_PROJECT,
-          authToken: process.env.SENTRY_AUTH_TOKEN,
-        }),
+      process.env.SENTRY_ORG &&
+      process.env.SENTRY_PROJECT &&
+      sentryWebpackPlugin({
+        org: process.env.SENTRY_ORG,
+        project: process.env.SENTRY_PROJECT,
+        authToken: process.env.SENTRY_AUTH_TOKEN,
+      }),
       // sourcemap url like # sourceMappingURL=76-6370cd185962bc89.js.map wont load in electron
       // this is because the default file:// protocol will be ignored by Chromium
       // so we need to replace the sourceMappingURL to assets:// protocol
@@ -296,12 +296,12 @@ export function createHTMLTargetConfig(
       // replace # sourceMappingURL=76-6370cd185962bc89.js.map
       // to      # sourceMappingURL=assets://./{dir}/76-6370cd185962bc89.js.map
       buildConfig.isElectron &&
-        new webpack.SourceMapDevToolPlugin({
-          append: pathData => {
-            return `\n//# sourceMappingURL=assets://./${pathData.filename}.map`;
-          },
-          filename: '[file].map',
-        }),
+      new webpack.SourceMapDevToolPlugin({
+        append: pathData => {
+          return `\n//# sourceMappingURL=assets://./${pathData.filename}.map`;
+        },
+        filename: '[file].map',
+      }),
     ]),
     //#endregion
 
@@ -466,13 +466,13 @@ export function createWorkerTargetConfig(
       ),
       new webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 }),
       process.env.SENTRY_AUTH_TOKEN &&
-        process.env.SENTRY_ORG &&
-        process.env.SENTRY_PROJECT &&
-        sentryWebpackPlugin({
-          org: process.env.SENTRY_ORG,
-          project: process.env.SENTRY_PROJECT,
-          authToken: process.env.SENTRY_AUTH_TOKEN,
-        }),
+      process.env.SENTRY_ORG &&
+      process.env.SENTRY_PROJECT &&
+      sentryWebpackPlugin({
+        org: process.env.SENTRY_ORG,
+        project: process.env.SENTRY_PROJECT,
+        authToken: process.env.SENTRY_AUTH_TOKEN,
+      }),
     ]),
     stats: { errorDetails: true },
     optimization: {
@@ -503,7 +503,8 @@ export function createWorkerTargetConfig(
 
 export function createNodeTargetConfig(
   pkg: Package,
-  entry: string
+  entry: string,
+  noExternals = false
 ): Omit<webpack.Configuration, 'name'> & { name: string } {
   const dev = process.env.NODE_ENV === 'development';
   return {
@@ -522,19 +523,21 @@ export function createNodeTargetConfig(
       globalObject: 'globalThis',
     },
     target: ['node', 'es2022'],
-    externals: (data, callback) => {
-      if (
-        data.request &&
-        // import ... from 'module'
-        /^[a-zA-Z@]/.test(data.request) &&
-        // not workspace deps
-        !pkg.deps.some(dep => data.request!.startsWith(dep.name))
-      ) {
-        callback(null, true);
-      } else {
-        callback(null, false);
-      }
-    },
+    externals: noExternals
+      ? undefined
+      : (data, callback) => {
+        if (
+          data.request &&
+          // import ... from 'module'
+          /^[a-zA-Z@]/.test(data.request) &&
+          // not workspace deps
+          !pkg.deps.some(dep => data.request!.startsWith(dep.name))
+        ) {
+          callback(null, true);
+        } else {
+          callback(null, false);
+        }
+      },
     externalsPresets: { node: true },
     node: { __dirname: false, __filename: false },
     mode: dev ? 'development' : 'production',

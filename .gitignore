@@ -76,6 +76,7 @@ next-env.d.ts
 # Rust
 target
 *.node
+!api/*.node
 tsconfig.node.tsbuildinfo
 lib
 affine.db

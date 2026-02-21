@@ -57,6 +57,20 @@ async function bootstrap() {
 }
 
 export default async (req: any, res: any) => {
+  if (req.url === '/health') {
+    return res.status(200).send('OK');
+  }
+  if (req.url === '/info') {
+    return res.status(200).json({
+      version: '0.26.1',
+      node_env: process.env.NODE_ENV,
+      vercel: !!process.env.VERCEL,
+      projectRoot: (globalThis as any).env?.projectRoot,
+      cwd: process.cwd(),
+      has_private_key: !!process.env.AFFINE_PRIVATE_KEY,
+    });
+  }
+
   try {
     if (!cachedApp) {
       cachedApp = await bootstrap();

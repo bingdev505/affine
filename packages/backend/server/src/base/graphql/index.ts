@@ -33,12 +33,14 @@ export type GraphqlContext = {
           useGlobalPrefix: true,
           graphiql: env.NODE_ENV === NodeEnv.Development,
           sortSchema: true,
-          autoSchemaFile: join(
-            env.projectRoot,
-            env.testing
-              ? './node_modules/.cache/schema.gql'
-              : './src/schema.gql'
-          ),
+          autoSchemaFile: process.env.VERCEL
+            ? '/tmp/schema.gql'
+            : join(
+              env.projectRoot,
+              env.testing
+                ? './node_modules/.cache/schema.gql'
+                : './src/schema.gql'
+            ),
           path: '/graphql',
           csrfPrevention: {
             requestHeaders: ['content-type'],
@@ -71,7 +73,7 @@ export type GraphqlContext = {
     }),
   ],
 })
-export class GqlModule {}
+export class GqlModule { }
 
 export * from './pagination';
 export { registerObjectType } from './register';

@@ -1,7 +1,5 @@
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import serverlessExpress from '@vendia/serverless-express';
-import { Callback, Context, Handler } from 'aws-lambda';
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import graphqlUploadExpress from 'graphql-upload/graphqlUploadExpress.mjs';
@@ -18,6 +16,7 @@ import { AuthGuard } from './core/auth';
 import { serverTimingAndCache } from './middleware/timing';
 
 let cachedApp: any;
+const OneMB = 1024 * 1024;
 
 async function bootstrap() {
   const expressApp = express();
@@ -35,6 +34,10 @@ async function bootstrap() {
   nestApp.useBodyParser('raw', { limit: 100 * OneMB });
   const logger = nestApp.get(AFFiNELogger);
   nestApp.useLogger(logger);
+  const config = nestApp.get(Config);
+  if (config.server.path) {
+    nestApp.setGlobalPrefix(config.server.path);
+  }
 
   nestApp.use(serverTimingAndCache);
   nestApp.use(

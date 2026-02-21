@@ -21,7 +21,7 @@
     "affine": "r affine.ts",
     "af": "r affine.ts",
     "dev": "yarn affine dev",
-    "build": "cross-env PUBLIC_PATH=/ yarn affine build -p web --deps && yarn workspace @affine/server build:vercel && mkdir -p api && cp packages/backend/server/dist/main.js api/index.js",
+    "build": "cross-env PUBLIC_PATH=/ yarn affine build -p web --deps && cp packages/frontend/apps/web/dist/selfhost.html packages/frontend/apps/web/dist/index.html && yarn workspace @affine/server build:vercel && mkdir -p api && cp packages/backend/server/dist/main.js api/index.js",
     "lint:eslint": "cross-env NODE_OPTIONS=\"--max-old-space-size=8192\" eslint --report-unused-disable-directives-severity=off . --cache",
     "lint:eslint:fix": "yarn lint:eslint --fix --fix-type problem,suggestion,layout",
     "lint:prettier": "prettier --ignore-unknown --cache --check .",

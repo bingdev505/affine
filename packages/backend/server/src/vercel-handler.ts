@@ -17,52 +17,54 @@ import {
 import { AuthGuard } from './core/auth';
 import { serverTimingAndCache } from './middleware/timing';
 
-let cachedServer: Handler;
+let cachedApp: any;
 
-const OneMB = 1024 * 1024;
+async function bootstrap() {
+  const expressApp = express();
+  const nestApp = await NestFactory.create<NestExpressApplication>(
+    AppModule,
+    new (await import('@nestjs/platform-express')).ExpressAdapter(expressApp),
+    {
+      cors: true,
+      rawBody: true,
+      bodyParser: true,
+      bufferLogs: true,
+    }
+  );
 
-async function bootstrap(): Promise<Handler> {
-  if (!cachedServer) {
-    const expressApp = express();
-    const nestApp = await NestFactory.create<NestExpressApplication>(
-      AppModule,
-      new (await import('@nestjs/platform-express')).ExpressAdapter(expressApp),
-      {
-        cors: true,
-        rawBody: true,
-        bodyParser: true,
-        bufferLogs: true,
-      }
-    );
+  nestApp.useBodyParser('raw', { limit: 100 * OneMB });
+  const logger = nestApp.get(AFFiNELogger);
+  nestApp.useLogger(logger);
 
-    nestApp.useBodyParser('raw', { limit: 100 * OneMB });
-    const logger = nestApp.get(AFFiNELogger);
-    nestApp.useLogger(logger);
-    
-    nestApp.use(serverTimingAndCache);
-    nestApp.use(
-      graphqlUploadExpress({
-        maxFileSize: 100 * OneMB,
-        maxFiles: 32,
-      })
-    );
+  nestApp.use(serverTimingAndCache);
+  nestApp.use(
+    graphqlUploadExpress({
+      maxFileSize: 100 * OneMB,
+      maxFiles: 32,
+    })
+  );
 
-    nestApp.useGlobalGuards(nestApp.get(AuthGuard), nestApp.get(CloudThrottlerGuard));
-    nestApp.useGlobalInterceptors(nestApp.get(CacheInterceptor));
-    nestApp.useGlobalFilters(new GlobalExceptionFilter(nestApp.getHttpAdapter()));
-    nestApp.use(cookieParser());
+  nestApp.useGlobalGuards(nestApp.get(AuthGuard), nestApp.get(CloudThrottlerGuard));
+  nestApp.useGlobalInterceptors(nestApp.get(CacheInterceptor));
+  nestApp.useGlobalFilters(new GlobalExceptionFilter(nestApp.getHttpAdapter()));
+  nestApp.use(cookieParser());
 
-    await nestApp.init();
-    cachedServer = serverlessExpress({ app: expressApp });
-  }
-  return cachedServer;
+  await nestApp.init();
+  return expressApp;
 }
 
-export const handler: Handler = async (
-  event: any,
-  context: Context,
-  callback: Callback
-) => {
-  const server = await bootstrap();
-  return server(event, context, callback);
+export default async (req: any, res: any) => {
+  try {
+    if (!cachedApp) {
+      cachedApp = await bootstrap();
+    }
+    return cachedApp(req, res);
+  } catch (err: any) {
+    console.error('Vercel Handler Error:', err);
+    res.status(500).json({
+      error: 'FUNCTION_INVOCATION_FAILED',
+      message: err.message,
+      stack: err.stack,
+    });
+  }
 };

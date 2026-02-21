@@ -68,6 +68,9 @@ export default async (req: any, res: any) => {
       projectRoot: (globalThis as any).env?.projectRoot,
       cwd: process.cwd(),
       has_private_key: !!process.env.AFFINE_PRIVATE_KEY,
+      deployment_type: (globalThis as any).env?.DEPLOYMENT_TYPE,
+      flavor: (globalThis as any).env?.FLAVOR,
+      is_selfhosted: (globalThis as any).env?.selfhosted,
     });
   }
 

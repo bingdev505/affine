@@ -41,8 +41,8 @@ export enum NodeEnv {
 }
 
 export enum DeploymentType {
-  Affine = 'affine',
-  Selfhosted = 'selfhosted',
+  Affine = 'Affine',
+  Selfhosted = 'Selfhosted',
 }
 
 export enum Platform {
